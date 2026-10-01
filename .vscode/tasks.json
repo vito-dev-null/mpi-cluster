@@ -1,0 +1,68 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Cluster: status",
+      "type": "shell",
+      "command": "${workspaceFolder}/dev",
+      "args": [
+        "status"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Cluster: MPI tests",
+      "type": "shell",
+      "command": "${workspaceFolder}/dev",
+      "args": [
+        "test"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Cluster: MPI run",
+      "type": "shell",
+      "command": "${workspaceFolder}/dev",
+      "args": [
+        "run",
+        "${input:mpiProgram}"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Cluster: build",
+      "type": "shell",
+      "command": "${workspaceFolder}/dev",
+      "args": [
+        "build"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Cluster: remote shell",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/dev_remote.sh",
+      "args": [
+        "${input:workerNode}"
+      ],
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "workerNode",
+      "type": "pickString",
+      "description": "Worker SSH target",
+      "options": [
+        "worker1",
+        "worker2"
+      ]
+    },
+    {
+      "id": "mpiProgram",
+      "type": "promptString",
+      "description": "Executable to distribute across discovered nodes",
+      "default": "${workspaceFolder}/tests/mpi_hello"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+MPI runtime compatibility library
+
+The launcher stages the compatibility library from this directory to its
+temporary runtime location and verifies its SHA-256 digest before use. Keep
+the source and linker map alongside the library so it can be rebuilt and
+reviewed. Do not add machine-specific build paths or runtime diagnostics.

@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+job_runner="$root/scripts/dev_execute_job.sh"
+
+usage() {
+    cat >&2 <<'EOF'
+Usage:
+  ./dev status
+  ./dev build
+  ./dev test
+  ./dev benchmark
+  ./dev run PROGRAM [ARGS...]
+EOF
+    exit 2
+}
+
+[[ $# -ge 1 ]] || usage
+command=$1
+shift
+
+case "$command" in
+    status)
+        [[ $# -eq 0 ]] || usage
+        exec "$root/scripts/dev_cluster_status.sh"
+        ;;
+    build)
+        [[ $# -eq 0 ]] || usage
+        if [[ -f "$root/Makefile" ]]; then
+            exec "$job_runner" build make -C "$root" -j"$(nproc)"
+        fi
+        if [[ -f "$root/CMakeLists.txt" ]]; then
+            [[ -d "$root/build" ]] || cmake -S "$root" -B "$root/build"
+            exec "$job_runner" build cmake --build "$root/build" --parallel "$(nproc)"
+        fi
+        if [[ -f "$root/tests/mpi_hello.c" ]]; then
+            exec "$job_runner" build mpicc -O2 -march=x86-64 -mtune=generic -Wall -Wextra \
+                "$root/tests/mpi_hello.c" -o "$root/tests/mpi_hello"
+        fi
+        printf 'No supported build entry point found\n' >&2
+        exit 3
+        ;;
+    test)
+        [[ $# -eq 0 ]] || usage
+        exec "$job_runner" test "$root/scripts/dev_cluster_test.sh"
+        ;;
+    benchmark)
+        exec "$job_runner" benchmark "$root/scripts/benchmark.sh" "$@"
+        ;;
+    run)
+        [[ $# -ge 1 ]] || usage
+        program=$1
+        if [[ "$program" == python || "$program" == python3 ]]; then
+            printf 'CLASSIFICATION local: ordinary Python is not transparently distributed\n' >&2
+            exec "$job_runner" python "$@"
+        fi
+        if [[ -x "$program" ]] && ldd "$program" 2>/dev/null | grep -Eq 'libmpi|libmpich'; then
+            exec env MPI_OPPORTUNISTIC="${MPI_OPPORTUNISTIC:-1}" "$job_runner" mpi "$root/scripts/dev_mpi.sh" "$@"
+        fi
+        if [[ -x "$program" ]]; then
+            printf 'CLASSIFICATION local: executable is not MPI-aware\n' >&2
+        else
+            printf 'CLASSIFICATION local: command is not a compiled MPI executable\n' >&2
+        fi
+        exec "$job_runner" generic "$@"
+        ;;
+    *)
+        usage
+        ;;
+esac

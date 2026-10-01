@@ -1,0 +1,31 @@
+name: MPI tests
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mpi-cluster-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - 'lib/**'
+      - 'run_mpi.sh'
+      - '.github/workflows/mpi-test.yml'
+
+jobs:
+  test:
+    timeout-minutes: 30
+    runs-on: [self-hosted, mpi-controller]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run MPI topology tests
+        run: ./tests/test_cluster.sh
+      - name: Verify dynamic launcher
+        run: ./run_mpi.sh ./tests/mpi_hello
+      - name: Verify opportunistic allocation
+        run: ./tests/test_opportunistic.sh

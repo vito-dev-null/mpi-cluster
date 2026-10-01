@@ -1,0 +1,27 @@
+name: Cluster check
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mpi-cluster-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/**'
+      - 'hostfile'
+      - '.github/workflows/cluster-check.yml'
+
+jobs:
+  check:
+    timeout-minutes: 15
+    runs-on: [self-hosted, mpi-controller]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check cluster
+        run: ./scripts/check_cluster.sh
+      - name: Verify discovery
+        run: ./scripts/discover_nodes.sh

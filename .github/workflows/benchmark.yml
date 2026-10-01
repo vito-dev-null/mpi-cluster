@@ -1,0 +1,32 @@
+name: MPI benchmark
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mpi-cluster-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: CPU iterations
+        required: false
+        default: '120000000'
+      repeats:
+        description: Repetitions per topology
+        required: false
+        default: '3'
+
+jobs:
+  benchmark:
+    timeout-minutes: 30
+    runs-on: [self-hosted, mpi-controller]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run benchmark
+        env:
+          ITERATIONS: ${{ inputs.iterations || '120000000' }}
+          REPEATS: ${{ inputs.repeats || '3' }}
+        run: ./scripts/benchmark.sh
